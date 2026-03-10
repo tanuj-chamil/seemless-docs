@@ -1,0 +1,330 @@
+---
+title: Header
+description: Full API reference for the Header configuration object — the root type that drives the Seemless navigation component.
+---
+
+import { Tabs, TabItem, Badge } from '@astrojs/starlight/components';
+import MermaidToggle from '../../../components/MermaidToggle.astro';
+
+The `Header` object is the single source of truth for your site's navigation. Pass it to the `<Header>` component and it controls everything — branding, nav items, dropdowns, search, CTAs, scroll behaviour, mobile nav, and the announcement bar.
+
+It is inspired by [Payload CMS](https://payloadcms.com) field architecture: every sub-object is a named, versioned, independently composable config block.
+
+## Type hierarchy
+
+<MermaidToggle code={`graph TD
+    Header --> Logo
+    Header --> NavItem
+    Header --> CtaButton
+    Header --> SearchConfig
+    Header --> ScrollConfig
+    Header --> MobileNavConfig
+    Header --> AnnouncementBar
+    NavItem --> SubNav
+    SubNav --> SubNavGroup
+    SubNav --> FeaturedPanel
+    SubNavGroup --> SubNavItem`} />
+
+---
+
+## `Header`
+
+The root configuration object.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | ✅ | Unique identifier. Used for DOM `id` and CMS revision tracking. |
+| `logo` | [`Logo`](#logo) | ✅ | Branding image and homepage link. |
+| `navItems` | [`NavItem[]`](/reference/header-nav/) | ✅ | Top-level navigation links. Items with `subNav` render as dropdowns. |
+| `ctas` | [`CtaButton[]`](#ctabutton) | — | Action buttons rendered on the right of the header. |
+| `search` | [`SearchConfig`](/reference/header-search/) | — | Enables a search input with optional live results. |
+| `theme` | [`Theme`](#theme) | — | Colour scheme. Defaults to `"auto"`. |
+| `transparent` | `boolean` | — | Makes the header background transparent — intended for use over a hero. |
+| `bordered` | `boolean` | — | Adds a bottom border/divider line. |
+| `background` | `string` | — | CSS colour or gradient. Overrides the theme default. |
+| `scroll` | [`ScrollConfig`](/reference/header-behavior/#scrollconfig) | — | Controls sticky, hide-on-scroll, and shrink behaviours. |
+| `mobile` | [`MobileNavConfig`](/reference/header-behavior/#mobilenavconfig) | — | Controls drawer/fullscreen mobile nav. |
+| `announcementBar` | [`AnnouncementBar`](#announcementbar) | — | Optional top-of-page promo strip. |
+| `locale` | `string` | — | BCP 47 locale tag (e.g. `"en-US"`). Used for `aria` and date formatting. |
+| `dir` | `"ltr" \| "rtl"` | — | Text direction for RTL language support. |
+| `_version` | `number` | — | Revision counter for cache-busting and CMS diffing. |
+| `_updatedAt` | `string` | — | ISO 8601 timestamp of last publish. |
+
+---
+
+## `Logo`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `image` | [`Image`](#image) | ✅ | Full-size logo shown on desktop. |
+| `imageMobile` | [`Image`](#image) | — | Compact/icon-only logo shown on mobile or scrolled state. |
+| `imageDark` | [`Image`](#image) | — | Dark-mode logo variant. |
+| `href` | `string` | ✅ | Link destination — usually `"/"`. |
+| `ariaLabel` | `string` | — | Screen reader label. Defaults to `"Go to homepage"`. |
+
+```ts
+logo: {
+  image:       { src: "/logo.svg", alt: "Acme", width: 120, height: 32 },
+  imageMobile: { src: "/logo-icon.svg", alt: "Acme", width: 32, height: 32 },
+  href: "/",
+  ariaLabel: "Acme — Go to homepage",
+}
+```
+
+---
+
+## `CtaButton`
+
+One or more action buttons rendered on the right side of the header.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | ✅ | Unique identifier. |
+| `label` | `string` | ✅ | Button text. |
+| `href` | `string` | ✅ | Link destination. |
+| `target` | [`LinkTarget`](#linktarget) | — | `_blank`, `_self`, etc. |
+| `variant` | [`CtaVariant`](#ctavariant) | — | Visual style. Defaults to `"primary"`. |
+| `icon` | [`Icon`](#icon) | — | Optional icon beside the label. |
+| `hideOnMobile` | `boolean` | — | Hides this button on small screens. |
+| `hideOnDesktop` | `boolean` | — | Hides this button on large screens. |
+| `trackingId` | `string` | — | Analytics event ID. |
+
+```ts
+ctas: [
+  { id: "login",  label: "Log in",     href: "/login",  variant: "ghost",   hideOnMobile: true },
+  { id: "signup", label: "Get started", href: "/signup", variant: "primary" },
+]
+```
+
+---
+
+## `AnnouncementBar`
+
+An optional strip rendered above the header for promotions or system notices.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | ✅ | Unique identifier used to store dismissal state in `localStorage`. |
+| `enabled` | `boolean` | ✅ | Master toggle. Set to `false` to hide without removing the config. |
+| `message` | `string` | ✅ | The announcement copy. Supports basic HTML inline elements. |
+| `link` | [`Link`](#link) | — | Optional inline CTA link at the end of the message. |
+| `dismissible` | `boolean` | — | Shows a close button. Dismissed state persists in `localStorage`. |
+| `background` | `string` | — | CSS colour or gradient for the bar background. |
+| `textColor` | `string` | — | CSS colour for text and icon. |
+| `expiresAt` | `string` | — | ISO 8601 date. The bar auto-hides after this timestamp. |
+
+```ts
+announcementBar: {
+  id: "promo-bar",
+  enabled: true,
+  message: "Free shipping on orders over $75 🎉",
+  link: { href: "/shipping", label: "Learn more" },
+  dismissible: true,
+  expiresAt: "2026-04-01T00:00:00Z",
+}
+```
+
+---
+
+## Shared types
+
+### `Image`
+
+| Field | Type | Description |
+|---|---|---|
+| `src` | `string` | URL or import path to the image. |
+| `alt` | `string` | Alt text — required for accessibility. |
+| `width` | `number` | Intrinsic width in px. Passed to `<img width>`. |
+| `height` | `number` | Intrinsic height in px. Passed to `<img height>`. |
+| `placeholder` | `string` | Base64 or URL used as a blur-up placeholder for lazy loading. |
+
+### `Icon`
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | `string` | Icon name from your icon library (e.g. Lucide, Heroicons). |
+| `svg` | `string` | Raw SVG string — used when not relying on an icon library. |
+| `position` | [`IconPosition`](#iconposition) | `"left"` (default) or `"right"`. |
+
+### `Link`
+
+| Field | Type | Description |
+|---|---|---|
+| `href` | `string` | Link destination. |
+| `label` | `string` | Visible link text. |
+| `target` | [`LinkTarget`](#linktarget) | `_self`, `_blank`, etc. |
+| `ariaLabel` | `string` | Overrides the link text for screen readers. |
+| `rel` | `string` | e.g. `"noopener noreferrer"` — appended to `rel` attribute. |
+
+### `Badge`
+
+| Field | Type | Description |
+|---|---|---|
+| `label` | `string` | Badge text (e.g. `"New"`, `"Beta"`). |
+| `variant` | [`BadgeVariant`](#badgevariant) | Controls the preset colour scheme. |
+| `color` | `string` | CSS colour override for custom badge colours. |
+
+---
+
+## Primitive / enum types
+
+### `Theme`
+```ts
+type Theme = "light" | "dark" | "auto";
+```
+
+### `LinkTarget`
+```ts
+type LinkTarget = "_self" | "_blank" | "_parent" | "_top";
+```
+
+### `NavLayout`
+```ts
+type NavLayout = "list" | "grid" | "featured" | "mega";
+```
+Controls how items within a `SubNavGroup` are rendered.
+
+| Value | Layout |
+|---|---|
+| `"list"` | Standard vertical list |
+| `"grid"` | Multi-column grid — good for 4+ items |
+| `"featured"` | Large cards with images and descriptions |
+| `"mega"` | Full-width panel with grouped sections |
+
+### `BadgeVariant`
+```ts
+type BadgeVariant = "default" | "new" | "beta" | "sale" | "hot";
+```
+
+### `CtaVariant`
+```ts
+type CtaVariant = "primary" | "secondary" | "ghost" | "outline" | "destructive";
+```
+
+### `IconPosition`
+```ts
+type IconPosition = "left" | "right";
+```
+
+---
+
+## Full example
+
+<Tabs>
+  <TabItem label="TypeScript">
+```ts
+import type { Header } from "@seemless/types";
+
+export const header: Header = {
+  id: "main-header",
+
+  logo: {
+    image:       { src: "/logo.svg", alt: "Acme", width: 120, height: 32 },
+    imageMobile: { src: "/logo-icon.svg", alt: "Acme", width: 32, height: 32 },
+    href: "/",
+  },
+
+  announcementBar: {
+    id: "promo-bar",
+    enabled: true,
+    message: "Free shipping on orders over $75 🎉",
+    link: { href: "/shipping", label: "Learn more" },
+    dismissible: true,
+    expiresAt: "2026-04-01T00:00:00Z",
+  },
+
+  navItems: [
+    {
+      id: "products",
+      label: "Products",
+      subNav: {
+        align: "left",
+        groups: [
+          {
+            id: "core",
+            label: "Core Products",
+            layout: "grid",
+            items: [
+              {
+                id: "analytics",
+                label: "Analytics",
+                href: "/products/analytics",
+                description: "Real-time insights for your team",
+                icon: { name: "bar-chart" },
+                badge: { label: "New", variant: "new" },
+              },
+            ],
+            footerLink: { href: "/products", label: "View all products →" },
+          },
+        ],
+        featuredPanel: {
+          type: "promo",
+          title: "Introducing v3.0",
+          description: "Faster builds, better DX, and a redesigned editor.",
+          image: { src: "/promo.jpg", alt: "v3 release" },
+          link: { href: "/blog/v3", label: "Read the announcement" },
+        },
+      },
+    },
+    { id: "docs",    label: "Docs",    href: "/docs" },
+    { id: "pricing", label: "Pricing", href: "/pricing" },
+  ],
+
+  ctas: [
+    { id: "login",  label: "Log in",      href: "/login",  variant: "ghost",   hideOnMobile: true },
+    { id: "signup", label: "Get started", href: "/signup", variant: "primary" },
+  ],
+
+  search: {
+    placeholder: "Search docs, products…",
+    shortcutHint: "⌘K",
+    resultsEndpoint: "/api/search",
+    minChars: 2,
+    debounceMs: 200,
+  },
+
+  theme: "auto",
+  bordered: true,
+
+  scroll: {
+    behavior: "sticky",
+    transparentAtTop: true,
+    backdropBlur: "12px",
+  },
+
+  mobile: {
+    style: "drawer",
+    drawerSide: "right",
+    showSearch: true,
+    showCtas: true,
+    breakpoint: 768,
+  },
+
+  locale: "en-US",
+  dir: "ltr",
+  _version: 1,
+};
+```
+  </TabItem>
+  <TabItem label="JSON">
+```json
+{
+  "id": "main-header",
+  "logo": {
+    "image": { "src": "/logo.svg", "alt": "Acme", "width": 120, "height": 32 },
+    "href": "/"
+  },
+  "navItems": [
+    { "id": "docs", "label": "Docs", "href": "/docs" },
+    { "id": "pricing", "label": "Pricing", "href": "/pricing" }
+  ],
+  "ctas": [
+    { "id": "signup", "label": "Get started", "href": "/signup", "variant": "primary" }
+  ],
+  "theme": "auto",
+  "bordered": true,
+  "_version": 1
+}
+```
+  </TabItem>
+</Tabs>

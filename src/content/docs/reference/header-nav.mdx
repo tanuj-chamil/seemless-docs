@@ -1,0 +1,240 @@
+---
+title: Header — NavItem & SubNav
+description: API reference for NavItem, SubNav, SubNavGroup, SubNavItem, and FeaturedPanel — the building blocks of the Seemless navigation dropdown system.
+---
+
+import MermaidToggle from '../../../components/MermaidToggle.astro';
+import { Badge } from '@astrojs/starlight/components';
+
+Navigation dropdowns in Seemless are composed of three nested layers: a `NavItem` triggers the dropdown, `SubNavGroup`s divide it into labelled sections, and `SubNavItem`s are the individual links within each section. An optional `FeaturedPanel` renders a rich content block beside the groups.
+
+## Structure
+
+<MermaidToggle code={`graph TD
+    NavItem -->|subNav| SubNav
+    SubNav -->|groups| SubNavGroup
+    SubNav -->|featuredPanel| FeaturedPanel
+    SubNavGroup -->|items| SubNavItem
+    SubNavGroup -->|footerLink| Link`} />
+
+---
+
+## `NavItem`
+
+A single entry in the top-level navigation bar.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | ✅ | Unique identifier. |
+| `label` | `string` | ✅ | Visible link text. |
+| `href` | `string` | — | Link destination. If omitted, the item acts as a dropdown trigger only. |
+| `target` | [`LinkTarget`](/reference/header/#linktarget) | — | `_blank`, `_self`, etc. |
+| `icon` | [`Icon`](/reference/header/#icon) | — | Optional icon beside the label. |
+| `badge` | [`Badge`](/reference/header/#badge) | — | Small label attached to the item (e.g. "New"). |
+| `highlight` | `boolean` | — | Applies a visual highlight — bold text or accent colour. |
+| `active` | `boolean` | — | Marks this item as the currently active route. Set server-side based on the current URL. |
+| `disabled` | `boolean` | — | Renders the item but makes it non-interactive. |
+| `subNav` | [`SubNav`](#subnav) | — | If present, renders a dropdown or mega-menu. |
+| `trackingId` | `string` | — | Analytics event ID fired on click. |
+
+```ts
+// Simple link
+{ id: "pricing", label: "Pricing", href: "/pricing" }
+
+// Dropdown trigger (no href)
+{ id: "products", label: "Products", subNav: { groups: [...] } }
+
+// Link with badge and icon
+{
+  id: "new-feature",
+  label: "AI Search",
+  href: "/features/ai-search",
+  icon: { name: "sparkles" },
+  badge: { label: "Beta", variant: "beta" },
+  highlight: true,
+}
+```
+
+---
+
+## `SubNav`
+
+The dropdown configuration attached to a `NavItem`.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `groups` | [`SubNavGroup[]`](#subnavgroup) | ✅ | One or more labelled sections of links. |
+| `featuredPanel` | [`FeaturedPanel`](#featuredpanel) | — | Optional rich content panel rendered beside the groups. |
+| `maxWidth` | `number` | — | Max width of the dropdown container in px. |
+| `align` | `"left" \| "center" \| "right"` | — | Alignment of the dropdown relative to the trigger. Defaults to `"left"`. |
+
+```ts
+subNav: {
+  align: "left",
+  maxWidth: 960,
+  groups: [...],
+  featuredPanel: {...},
+}
+```
+
+---
+
+## `SubNavGroup`
+
+A labelled section within a dropdown. Use multiple groups to divide a dropdown into logical categories.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | ✅ | Unique identifier. |
+| `label` | `string` | — | Section heading rendered above the group items. Omit for an unlabelled group. |
+| `layout` | [`NavLayout`](/reference/header/#navlayout) | ✅ | Controls how items are rendered: `"list"`, `"grid"`, `"featured"`, or `"mega"`. |
+| `items` | [`SubNavItem[]`](#subnavitem) | ✅ | The links in this group. |
+| `footerLink` | [`Link`](/reference/header/#link) | — | Optional "See all →" link rendered below the items. |
+
+### Layout options
+
+| `layout` value | Best for | Notes |
+|---|---|---|
+| `"list"` | 2–5 simple links | Compact vertical list. Icons are small. |
+| `"grid"` | 4–8 items with descriptions | 2- or 3-column grid. Shows icon + description. |
+| `"featured"` | 3–6 items with thumbnails | Large cards with image, title, and description. |
+| `"mega"` | Many items across columns | Full-width panel. Use with multiple groups. |
+
+```ts
+{
+  id: "core-products",
+  label: "Core Products",
+  layout: "grid",
+  items: [...],
+  footerLink: { href: "/products", label: "View all products →" },
+}
+```
+
+---
+
+## `SubNavItem`
+
+An individual link rendered inside a `SubNavGroup`.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | ✅ | Unique identifier. |
+| `label` | `string` | ✅ | Link text. |
+| `href` | `string` | ✅ | Link destination. |
+| `target` | [`LinkTarget`](/reference/header/#linktarget) | — | `_blank`, `_self`, etc. |
+| `description` | `string` | — | Subtitle shown in `"grid"` and `"featured"` layouts. |
+| `image` | [`Image`](/reference/header/#image) | — | Thumbnail or icon image — used in `"featured"` layout. |
+| `icon` | [`Icon`](/reference/header/#icon) | — | Icon rendered before the label. |
+| `badge` | [`Badge`](/reference/header/#badge) | — | Small label (e.g. "New", "Sale"). |
+| `disabled` | `boolean` | — | Renders the item but makes it non-interactive. |
+| `trackingId` | `string` | — | Analytics event ID fired on click. |
+
+```ts
+{
+  id: "analytics",
+  label: "Analytics",
+  href: "/products/analytics",
+  description: "Real-time insights for your team",
+  icon: { name: "bar-chart" },
+  badge: { label: "New", variant: "new" },
+}
+```
+
+---
+
+## `FeaturedPanel`
+
+An optional rich content block rendered beside the `SubNavGroup` list — commonly used for promotional content in mega-menus.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `type` | [`FeaturedPanelType`](#featuredpaneltype) | ✅ | Controls the panel's rendering mode. |
+| `title` | `string` | — | Panel heading. |
+| `description` | `string` | — | Supporting copy. |
+| `image` | [`Image`](/reference/header/#image) | — | Hero or thumbnail image. |
+| `link` | [`Link`](/reference/header/#link) | — | CTA link at the bottom of the panel. |
+| `customContent` | `string` | — | Raw HTML string for fully custom panel content. Used when `type` is `"custom"`. |
+| `background` | `string` | — | CSS colour or gradient for the panel background. |
+
+### `FeaturedPanelType`
+
+```ts
+type FeaturedPanelType = "promo" | "article" | "cta" | "custom";
+```
+
+| Value | Description |
+|---|---|
+| `"promo"` | Product or feature callout — image + title + description + link |
+| `"article"` | Blog post preview — thumbnail + headline + excerpt |
+| `"cta"` | Conversion-focused — single prominent action button |
+| `"custom"` | Render arbitrary HTML via `customContent` |
+
+```ts
+featuredPanel: {
+  type: "promo",
+  title: "Introducing v3.0",
+  description: "Faster builds, better DX, and a redesigned editor.",
+  image: { src: "/promo.jpg", alt: "v3 release" },
+  link: { href: "/blog/v3", label: "Read the announcement" },
+  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+}
+```
+
+---
+
+## Full dropdown example
+
+```ts
+navItems: [
+  {
+    id: "products",
+    label: "Products",
+    subNav: {
+      align: "left",
+      maxWidth: 900,
+      groups: [
+        {
+          id: "platform",
+          label: "Platform",
+          layout: "grid",
+          items: [
+            {
+              id: "cms",
+              label: "CMS",
+              href: "/products/cms",
+              description: "Structured content at scale",
+              icon: { name: "layers" },
+            },
+            {
+              id: "analytics",
+              label: "Analytics",
+              href: "/products/analytics",
+              description: "Real-time insights for your team",
+              icon: { name: "bar-chart" },
+              badge: { label: "New", variant: "new" },
+            },
+          ],
+          footerLink: { href: "/products", label: "View all products →" },
+        },
+        {
+          id: "integrations",
+          label: "Integrations",
+          layout: "list",
+          items: [
+            { id: "stripe",    label: "Stripe",    href: "/integrations/stripe" },
+            { id: "sendgrid",  label: "SendGrid",  href: "/integrations/sendgrid" },
+            { id: "cloudflare",label: "Cloudflare",href: "/integrations/cloudflare" },
+          ],
+        },
+      ],
+      featuredPanel: {
+        type: "promo",
+        title: "Introducing v3.0",
+        description: "Faster builds, better DX, and a redesigned editor.",
+        image: { src: "/promo.jpg", alt: "v3 release" },
+        link: { href: "/blog/v3", label: "Read the announcement" },
+      },
+    },
+  },
+]
+```
