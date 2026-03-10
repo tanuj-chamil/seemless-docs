@@ -1,0 +1,93 @@
+---
+title: Architecture
+description: How Seemless Engine fits together — Astro, Cloudflare Workers, D1, KV, R2, and the React admin dashboard.
+---
+
+import MermaidToggle from '../../../components/MermaidToggle.astro';
+
+Seemless Engine is a full-stack edge application. Every layer is chosen to minimise latency and remove the need for origin servers.
+
+## High-level overview
+
+<MermaidToggle code={`graph TD
+    Browser(Browser) -->|HTTPS request| CFEdge[Cloudflare Edge Network]
+    CFEdge -->|Worker invocation| Worker[Astro / Cloudflare Worker]
+    Worker -->|SQL queries| D1[(Cloudflare D1)]
+    Worker -->|KV reads| KV[(Cloudflare KV)]
+    Worker -->|Asset reads| R2[(Cloudflare R2)]
+    AdminUI[React Admin Dashboard] -->|REST / RPC| Worker
+    Worker -->|Rendered HTML| CFEdge
+    CFEdge -->|Cached response| Browser`} />
+
+## Layers
+
+### Cloudflare Edge Network
+
+All traffic enters through Cloudflare's global anycast network. Static assets are cached at Cloudflare's CDN layer — they never reach the Worker. For dynamic requests, the nearest edge node invokes the Worker directly. There is no origin server, no reverse proxy, and no load balancer to maintain.
+
+### Astro Worker (`site/`)
+
+The site is an Astro application compiled to Cloudflare Workers format via `@astrojs/cloudflare`. It handles:
+
+- **Static page rendering** — MDX/Markdown content is compiled to HTML at build time
+- **Dynamic page rendering** — Pages with `export const prerender = false` run as Worker handlers at request time
+- **API routes** — `src/pages/api/**` expose REST endpoints consumed by the admin dashboard and client-side islands
+- **Session management** — Authentication state is stored in Cloudflare KV, keyed by a signed session cookie
+
+### React Admin Dashboard (`admin/`)
+
+A standalone Vite + React SPA that communicates exclusively with the Astro API routes. It is deployed to Cloudflare Pages (or served from R2 + a Worker route). The dashboard handles:
+
+- Page and content management
+- Media uploads (proxied to R2)
+- Site settings and configuration
+- User and role management
+
+### Cloudflare D1 (database)
+
+D1 is a serverless SQLite database that runs at the edge. Seemless uses it to store:
+
+- Page metadata, slugs, and content
+- User accounts and roles
+- Site configuration
+- Audit logs
+
+Migrations are managed with plain SQL files in `/migrations/`, run via `bun run db:migrate`.
+
+### Cloudflare KV (key-value store)
+
+KV is used for data that needs to be read extremely fast globally, even if it is slightly stale:
+
+- Session tokens
+- Feature flags
+- Cached rendered output for high-traffic pages
+
+### Cloudflare R2 (object storage)
+
+R2 is an S3-compatible object store with zero egress fees. It stores:
+
+- Uploaded images and media
+- Built static assets (JS, CSS, fonts)
+- Sitemap and RSS feed files
+
+## Request lifecycle
+
+1. User requests a URL
+2. Cloudflare checks its cache — if hit, returns immediately (no Worker cost)
+3. If miss, the nearest edge node invokes the Astro Worker
+4. The Worker reads content from D1 and/or KV
+5. Astro renders the page to HTML
+6. The response is returned and cached at the edge for subsequent requests
+
+## Build & deploy pipeline
+
+```
+bun run build
+  └── astro build          # Compiles site to Worker + static assets
+  └── vite build (admin)   # Compiles admin SPA
+
+bun run deploy
+  └── wrangler deploy      # Uploads Worker + assets to Cloudflare
+```
+
+See [Deploying to Cloudflare](/deployment/cloudflare/) for the full deployment guide.

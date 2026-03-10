@@ -1,0 +1,24 @@
+---
+title: Example Guide
+description: A guide in my new Starlight docs site.
+---
+
+import MermaidToggle from '../../../components/MermaidToggle.astro';
+
+Guides lead a user through a specific task they want to accomplish, often with a sequence of steps.
+Writing a good guide requires thinking about what your users are trying to do.
+
+## Using Mermaid Diagrams
+
+With astro-mermaid integrated, you can easily add diagrams to your documentation using Mermaid syntax. Use the toggle to switch between the rendered diagram and the source code.
+
+<MermaidToggle code={`graph TD;
+    A[Start] --> B{Is it working?};
+    B -->|Yes| C[Great!];
+    B -->|No| D[Debug];
+    D --> B;
+    C --> E[End];`} />
+
+## Further reading
+
+- Read [about how-to guides](https://diataxis.fr/how-to-guides/) in the Diátaxis framework

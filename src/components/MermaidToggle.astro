@@ -1,0 +1,105 @@
+---
+interface Props {
+  code: string;
+}
+
+const { code } = Astro.props;
+---
+
+<div class="mermaid-toggle-wrapper">
+  <div class="mermaid-toolbar">
+    <button class="toggle-source-btn" aria-pressed="false">Show source</button>
+  </div>
+  <div class="mermaid-diagram-view">
+    <pre class="mermaid">{code}</pre>
+  </div>
+  <div class="mermaid-source-view" hidden>
+    <pre class="mermaid-source-code"><code>{code}</code></pre>
+  </div>
+</div>
+
+<style>
+  .mermaid-toggle-wrapper {
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin: 1.5rem 0;
+  }
+
+  .mermaid-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.375rem 0.75rem;
+    background-color: var(--sl-color-gray-6);
+    border-bottom: 1px solid var(--sl-color-gray-5);
+  }
+
+  .toggle-source-btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--sl-color-gray-4);
+    background-color: var(--sl-color-bg);
+    color: var(--sl-color-text);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .toggle-source-btn:hover {
+    background-color: var(--sl-color-gray-5);
+  }
+
+  .toggle-source-btn[aria-pressed="true"] {
+    background-color: var(--sl-color-accent);
+    color: var(--sl-color-white);
+    border-color: var(--sl-color-accent);
+  }
+
+  .mermaid-diagram-view {
+    padding: 1rem;
+  }
+
+  /* Hide raw code until mermaid.js has rendered it */
+  .mermaid-diagram-view :global(pre.mermaid):not([data-processed]) {
+    visibility: hidden;
+    min-height: 160px;
+  }
+
+  .mermaid-source-view {
+    padding: 0;
+  }
+
+  .mermaid-source-code {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    background-color: var(--sl-color-gray-6);
+    overflow-x: auto;
+    font-size: 0.85em;
+    line-height: 1.6;
+    white-space: pre;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.mermaid-toggle-wrapper').forEach((wrapper) => {
+    const btn = wrapper.querySelector<HTMLButtonElement>('.toggle-source-btn')!;
+    const diagramView = wrapper.querySelector<HTMLElement>('.mermaid-diagram-view')!;
+    const sourceView = wrapper.querySelector<HTMLElement>('.mermaid-source-view')!;
+
+    btn.addEventListener('click', () => {
+      const showingSource = !sourceView.hidden;
+
+      if (showingSource) {
+        sourceView.hidden = true;
+        diagramView.hidden = false;
+        btn.textContent = 'Show source';
+        btn.setAttribute('aria-pressed', 'false');
+      } else {
+        diagramView.hidden = true;
+        sourceView.hidden = false;
+        btn.textContent = 'Show diagram';
+        btn.setAttribute('aria-pressed', 'true');
+      }
+    });
+  });
+</script>
